@@ -1,0 +1,20 @@
+hunt_cycle:
+  cron: "0 * * * *"
+  class: "HuntCycleJob"
+  args:
+    - "scheduled"
+  queue: "critical"
+  description: "Periodic automated threat hunt every 15 minutes"
+
+stale_hunt_cleanup:
+  cron: "*/10 * * * *"
+  class: "StaleHuntCleanupJob"
+  queue: "low"
+  description: "Mark hunts stuck in 'running' for >30 min as failed"
+
+false_positive_analysis:
+  cron: "0 2 * * *"
+  class: "FalsePositiveAnalysisJob"
+  queue: "low"
+  description: "Daily false positive pattern analysis at 2:00 AM"
+
