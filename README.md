@@ -1,73 +1,114 @@
-# Welcome to your Lovable project
+# NIGHTWATCH
 
-## Project info
+**Adversarial Multi-Agent Threat Hunting System**
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+AI-powered threat hunting with four Elasticsearch Agent Builder agents that hunt for threats, debate their findings, and take automated response actions.
 
-## How can I edit this code?
+---
 
-There are several ways of editing your application.
+## Features
 
-**Use Lovable**
+- **Four-agent adversarial loop:** SCANNER, TRACER, ADVOCATE, and COMMANDER independently analyze security logs and debate findings to reduce false positives
+- **Automated hunt cycles** via Sidekiq-Cron; analyst-initiated chat with COMMANDER for ad-hoc investigations
+- **Confidence-based routing:** HIGH (70–100%), MEDIUM (40–69%), LOW (0–39%) with simulated response actions for high-confidence threats
+- **Dashboard:** threat list, full threat detail with agent reasoning chain, attack timeline, review queue, chat interface, hunt history
+- **Real-time updates** via ActionCable WebSocket
+- **MCP and A2A integration** for external clients (Claude Desktop, SOAR platforms)
+- **MITRE ATT&CK coverage** across initial compromise, lateral movement, privilege escalation, and data exfiltration
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+---
 
-Changes made via Lovable will be committed automatically to this repo.
+## Tech Stack
 
-**Use your preferred IDE**
+| Layer | Technology |
+|-------|------------|
+| Backend | Ruby on Rails 7 (API mode), MySQL, Redis, Sidekiq |
+| Frontend | React 18, TypeScript, Vite, Tailwind CSS, shadcn/ui, React Query |
+| Elasticsearch | Kibana Agent Builder, ES\|QL tools, four indices |
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+---
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+## Prerequisites
 
-Follow these steps:
+- Docker and Docker Compose
+- Elasticsearch Cloud deployment with Agent Builder (for threat detection)
+- Python 3 with `elasticsearch` and `python-dotenv` packages (for sample data generation)
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+---
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+## Quick Start
 
-# Step 3: Install the necessary dependencies.
-npm i
+```bash
+cp backend/.env.example backend/.env
+# Edit backend/.env with your Kibana URL, API key, and agent IDs
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+docker compose up --build
 ```
 
-**Edit a file directly in GitHub**
+- **App:** http://localhost:8080
+- **API:** http://localhost:3000
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+On first run, the backend runs `db:create` and `db:migrate` automatically.
 
-**Use GitHub Codespaces**
+---
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+## Environment Variables
 
-## What technologies are used for this project?
+Copy `backend/.env.example` to `backend/.env` and configure:
 
-This project is built with:
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `KIBANA_URL` | Yes (for agents) | Kibana deployment URL (e.g. `https://YOUR-DEPLOYMENT.kb.us-east-1.aws.elastic.cloud`) |
+| `KIBANA_API_KEY` | Yes (for agents) | Base64 API key for Kibana |
+| `COMMANDER_AGENT_ID` | Yes | Agent ID from Elastic Agent Builder |
+| `SCANNER_AGENT_ID` | Yes | Agent ID for SCANNER agent |
+| `TRACER_AGENT_ID` | Yes | Agent ID for TRACER agent |
+| `ADVOCATE_AGENT_ID` | Yes | Agent ID for ADVOCATE agent |
+| `DB_HOST` | No (Docker sets) | MySQL host; Docker uses `mysql` |
+| `DB_PASSWORD` | No (Docker sets) | MySQL root password |
+| `REDIS_URL` | No (Docker sets) | Redis URL for Sidekiq and ActionCable |
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+Docker Compose overrides `DB_HOST`, `DB_PASSWORD`, and `REDIS_URL` automatically.
 
-## How can I deploy this project?
+---
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+## Data Setup
 
-## Can I connect a custom domain to my Lovable project?
+### Elasticsearch (required for threat detection)
 
-Yes, you can!
+1. **Create indices** in Kibana Dev Tools. See [docs/ELASTICSEARCH_SETUP.md](docs/ELASTICSEARCH_SETUP.md) Section 2 for index mappings.
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+2. **Generate sample APT attack data:**
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+```bash
+export ES_URL="https://YOUR-DEPLOYMENT.es.REGION.aws.elastic.cloud:443"
+export ES_API_KEY="your-base64-api-key"
+
+pip install elasticsearch python-dotenv
+python scripts/generate_data.py
+```
+
+You can also create a `.env` at the project root with `ES_URL` and `ES_API_KEY`; the script reads them via `load_dotenv()`.
+
+### MySQL
+
+- Migrations run automatically on `docker compose up`.
+- Optional: `docker compose run --rm backend bundle exec rails db:seed` (seeds are minimal by default).
+
+---
+
+## Project Structure
+
+```
+├── backend/          # Rails 7 API
+├── frontend/         # React + Vite
+├── scripts/          # Sample data generator (generate_data.py)
+└── docs/             # Documentation
+```
+
+---
+
+## Documentation
+
+- [docs/PROJECT_OVERVIEW.md](docs/PROJECT_OVERVIEW.md) – Full project narrative
+- [docs/ELASTICSEARCH_SETUP.md](docs/ELASTICSEARCH_SETUP.md) – Index creation, ES|QL tools, and agent configuration

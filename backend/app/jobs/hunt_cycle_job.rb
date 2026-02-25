@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-# Triggered by Sidekiq-Cron every 15 minutes (see config/schedule.yml).
+# Triggered by Sidekiq-Cron every hour (see config/schedule.yml).
 # Can also be enqueued manually from HuntsController.
 
 class HuntCycleJob

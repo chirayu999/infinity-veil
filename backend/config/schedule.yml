@@ -4,7 +4,7 @@ hunt_cycle:
   args:
     - "scheduled"
   queue: "critical"
-  description: "Periodic automated threat hunt every 15 minutes"
+  description: "Periodic automated threat hunt every hour"
 
 stale_hunt_cleanup:
   cron: "*/10 * * * *"

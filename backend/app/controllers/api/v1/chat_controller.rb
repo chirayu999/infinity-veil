@@ -96,7 +96,7 @@ module Api
               title:             (t[:title].presence || "Chat-derived Threat").truncate(255),
               description:       t[:description].presence || content,
               confidence_score:  t[:confidence_score].to_i.clamp(0, 100).then { |s| s > 0 ? s : 50 },
-              attack_phase:      t[:attack_phase].presence || "multi_phase",
+              attack_phase:      ThreatBuilderService.normalize_attack_phase(t[:attack_phase].presence),
               affected_assets:   Array.wrap(t[:affected_assets]),
               agent_reasoning:   t[:agent_reasoning] || { commander: { finding: content } },
               esql_queries_used: Array.wrap(t[:esql_queries_used]),

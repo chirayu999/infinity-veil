@@ -7,7 +7,7 @@
 #   4. Handle each threat based on confidence level
 #   5. Mark HuntCycle as completed (or failed on error)
 #
-# Called by HuntCycleJob (scheduled every 15 min + manual triggers).
+# Called by HuntCycleJob (scheduled every hour + manual triggers).
 
 class HuntOrchestratorService
   def initialize

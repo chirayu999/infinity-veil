@@ -104,6 +104,15 @@ class ThreatBuilderService
     "persistence"                => "persistence",
     "multi-phase"                => "multi_phase",
     "multiphase"                 => "multi_phase",
+    "credential_access"          => "privilege_escalation",
+    "credential access"          => "privilege_escalation",
+    "discovery"                  => "multi_phase",
+    "collection"                 => "multi_phase",
+    "command_and_control"        => "multi_phase",
+    "command and control"        => "multi_phase",
+    "impact"                     => "multi_phase",
+    "defense_evasion"            => "multi_phase",
+    "defense evasion"            => "multi_phase",
   }.freeze
 
   VALID_ATTACK_PHASES = %w[
@@ -112,6 +121,10 @@ class ThreatBuilderService
   ].freeze
 
   def normalize_attack_phase(phase)
+    self.class.normalize_attack_phase(phase)
+  end
+
+  def self.normalize_attack_phase(phase)
     return "multi_phase" if phase.blank?
 
     normalized = phase.to_s.strip.downcase.tr("-", "_")

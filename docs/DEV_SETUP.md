@@ -1,222 +1,82 @@
 # NIGHTWATCH — Local Development Setup
 
-Step-by-step guide to set up MySQL, Redis, and Sidekiq on WSL Ubuntu for the Rails backend.
+Use Docker to run the full stack (MySQL, Redis, Rails, Sidekiq, frontend) with one command. Seed the database and open the app.
 
 ---
 
 ## Prerequisites
 
-- WSL 2 with Ubuntu 22.04+
-- Ruby 3.2+ (via `rbenv` or `rvm`)
-- Node.js 18+ (for the frontend)
-- The repo cloned to `~/elastic-ai`
+- Docker and Docker Compose installed on your machine.
+- Repo cloned (e.g. to `~/elastic-ai/infinity-veil` or your path).
 
 ---
 
-## 1. MySQL Setup
+## 1. One-time setup
 
-### 1.1 Install MySQL
-
-```bash
-sudo apt update
-sudo apt install -y mysql-server
-sudo service mysql start
-```
-
-Verify it's running:
+**Create backend env file** (required for `docker compose` to start):
 
 ```bash
-sudo service mysql status
+cp backend/.env.example backend/.env
 ```
 
-### 1.2 Secure the installation and set root password
-
-```bash
-sudo mysql
-```
-
-Inside the MySQL shell:
-
-```sql
-ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY 'password';
-FLUSH PRIVILEGES;
-EXIT;
-```
-
-> Use `password` for local dev or choose your own. Update `backend/config/database.yml` to match.
-
-### 1.3 Update database.yml
-
-Edit `backend/config/database.yml` — set the root password:
-
-```yaml
-default: &default
-  adapter: mysql2
-  encoding: utf8mb4
-  pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
-  username: root
-  password: password        # <-- set this
-  host: <%= ENV.fetch("DB_HOST") { "localhost" } %>
-```
-
-### 1.4 Create the database
-
-```bash
-cd backend
-bundle exec rails db:create
-```
-
-Expected output:
-
-```
-Created database 'nightwatch_development'
-Created database 'nightwatch_test'
-```
+Edit `backend/.env` and set your Elastic/Kibana and Slack values. For a minimal run you can leave them empty; Kibana and Slack features will not work until you set them.
 
 ---
 
-## 2. Redis Setup
+## 2. Seed the database and start all servers
 
-### 2.1 Install Redis
-
-```bash
-sudo apt install -y redis-server
-```
-
-### 2.2 Start Redis
+From the repo root:
 
 ```bash
-sudo service redis-server start
+docker compose up --build
 ```
 
-### 2.3 Verify
+On first run, the backend runs `db:create` and `db:migrate` automatically.
+
+**Seed the database** (optional, run once after the stack is up):
 
 ```bash
-redis-cli ping
-# Expected: PONG
+docker compose run --rm backend bundle exec rails db:seed
 ```
 
-Redis will run on `redis://localhost:6379` by default. The Rails app reads `REDIS_URL` from the environment (falls back to `redis://localhost:6379/0`).
+Open the app at **http://localhost:8080**. The API (and Sidekiq Web if mounted) is on port 3000.
 
 ---
 
-## 3. Environment Variables
+## 3. After code or dependency changes
 
-Create `backend/.env` (never commit this):
+- **Code changes:** Rails and Vite pick up changes automatically (source is mounted). No restart needed.
+- **Dependency or env changes:** Restart the affected services:
 
-```bash
-# backend/.env
+  ```bash
+  docker compose restart backend sidekiq frontend
+  ```
 
-# MySQL
-DB_HOST=localhost
+  Or rebuild and restart:
 
-# Redis
-REDIS_URL=redis://localhost:6379/0
-
-# Elastic / Kibana
-KIBANA_URL=https://YOUR-DEPLOYMENT.kb.us-east-1.aws.elastic.cloud
-KIBANA_API_KEY=YOUR_BASE64_API_KEY
-
-# Elastic Agent IDs (from Kibana Agent Builder)
-COMMANDER_AGENT_ID=your-commander-agent-id
-SCANNER_AGENT_ID=your-scanner-agent-id
-TRACER_AGENT_ID=your-tracer-agent-id
-ADVOCATE_AGENT_ID=your-advocate-agent-id
-
-# Slack
-SLACK_BOT_TOKEN=xoxb-your-bot-token
-SLACK_CHANNEL=#security-ops
-
-# App
-NIGHTWATCH_DASHBOARD_URL=http://localhost:5173
-```
-
-Install `dotenv-rails` to auto-load this in development (add to `Gemfile`):
-
-```ruby
-gem "dotenv-rails", groups: [:development, :test]
-```
+  ```bash
+  docker compose up -d --build
+  ```
 
 ---
 
-## 4. Bundle Install
+## 4. Env vars for Docker
 
-```bash
-cd backend
-bundle install
-```
+`docker-compose.yml` sets `DB_HOST`, `REDIS_URL`, `DB_PASSWORD`, `FRONTEND_URL`, and `NIGHTWATCH_DASHBOARD_URL` for the backend. Secrets (Kibana, Slack, agent IDs) are read from `backend/.env`. Keep that file out of version control.
 
 ---
 
-## 5. Run Database Migrations
+## 5. Optional: run in background
 
 ```bash
-cd backend
-bundle exec rails db:migrate
+docker compose up -d --build
 ```
+
+Logs: `docker compose logs -f`. Stop: `docker compose down`.
 
 ---
 
-## 6. Start Sidekiq
-
-Sidekiq requires Redis and the Rails app to be running.
-
-### 6.1 Start the Rails API server
-
-```bash
-cd backend
-bundle exec rails server -p 3000
-```
-
-### 6.2 Start Sidekiq (in a second terminal)
-
-```bash
-cd backend
-bundle exec sidekiq -C config/sidekiq.yml
-```
-
-The `config/sidekiq.yml` file configures queues. Sidekiq-Cron will pick up `config/schedule.yml` automatically on boot.
-
-### 6.3 Verify Sidekiq Web UI (optional)
-
-If you add `mount Sidekiq::Web => '/sidekiq'` to `routes.rb`, visit:
-
-```
-http://localhost:3000/sidekiq
-```
-
----
-
-## 7. Start the Frontend
-
-```bash
-cd frontend    # or the repo root (symlinked)
-npm install
-npm run dev
-```
-
-Frontend runs at `http://localhost:5173`. It proxies API calls to `http://localhost:3000`.
-
----
-
-## 8. Full Process Checklist
-
-Run these in separate terminals:
-
-
-| Terminal | Command                                                   | Purpose                       |
-| -------- | --------------------------------------------------------- | ----------------------------- |
-| 1        | `sudo service mysql start`                                | MySQL database                |
-| 2        | `sudo service redis-server start`                         | Redis (ActionCable + Sidekiq) |
-| 3        | `cd backend && bundle exec rails s -p 3000`               | Rails API                     |
-| 4        | `cd backend && bundle exec sidekiq -C config/sidekiq.yml` | Background jobs               |
-| 5        | `cd frontend && npm run dev`                              | React frontend                |
-
-
----
-
-## 9. Sidekiq Queue Reference
-
+## 6. Sidekiq Queue Reference
 
 | Queue      | Job                               | Trigger                               |
 | ---------- | --------------------------------- | ------------------------------------- |
@@ -227,31 +87,53 @@ Run these in separate terminals:
 | `low`      | `FalsePositiveAnalysisJob`        | Daily at 2:00 AM (cron)               |
 | `low`      | `SyncExceptionToElasticsearchJob` | After exception pattern confirmed     |
 
+---
+
+## 7. Troubleshooting
+
+**Docker: `no such file or directory` for backend/.env**
+
+Create the env file before running `docker compose up`: `cp backend/.env.example backend/.env`. Edit with your secrets (or leave placeholders for a minimal run).
+
+**MySQL: `Access denied for user 'root'@'localhost'`** (local setup only)
+
+See [Local setup without Docker](#appendix-local-setup-without-docker) and the MySQL secure-install steps there.
+
+**Redis / Sidekiq / ActionCable issues**
+
+Check that the stack is up (`docker compose ps`) and that `backend/.env` is not overriding `REDIS_URL` in a way that breaks the backend (Docker sets `REDIS_URL=redis://redis:6379/0`).
 
 ---
 
-## 10. Troubleshooting
+## Appendix: Local setup without Docker
 
-**MySQL: `Access denied for user 'root'@'localhost'`**
+If you cannot or prefer not to use Docker, you can run each service on the host.
 
-```bash
-sudo mysql -u root
-ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY 'password';
-FLUSH PRIVILEGES;
-EXIT;
-```
+**Prerequisites:** WSL 2 with Ubuntu 22.04+ (or similar), Ruby 3.2+ (e.g. rbenv/rvm), Node.js 18+, MySQL, Redis.
 
-**Redis: `Could not connect to Redis`**
+1. **MySQL:** Install, start, set root password to `password`, create DBs:
+   ```bash
+   sudo apt install -y mysql-server && sudo service mysql start
+   # In MySQL: ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY 'password';
+   cd backend && bundle exec rails db:create
+   ```
 
-```bash
-sudo service redis-server start
-redis-cli ping   # Should return PONG
-```
+2. **Redis:** Install and start:
+   ```bash
+   sudo apt install -y redis-server && sudo service redis-server start
+   ```
 
-**Sidekiq not processing jobs**
+3. **Backend env:** Create `backend/.env` from `backend/.env.example`. Set `DB_HOST=localhost`, `REDIS_URL=redis://localhost:6379/0`, and your Kibana/Slack keys.
 
-Check that `REDIS_URL` matches the running Redis instance. Run `redis-cli ping` and check `bundle exec sidekiq` logs.
+4. **Backend deps and DB:** `cd backend && bundle install && bundle exec rails db:migrate db:seed`
 
-**ActionCable WebSocket not connecting**
+5. **Start all servers** in separate terminals:
+   - Terminal 1: `sudo service mysql start` (if not already)
+   - Terminal 2: `sudo service redis-server start` (if not already)
+   - Terminal 3: `cd backend && bundle exec rails s -p 3000`
+   - Terminal 4: `cd backend && bundle exec sidekiq -C config/sidekiq.yml`
+   - Terminal 5: `cd frontend && npm install && npm run dev`
 
-Make sure `config/cable.yml` has `adapter: redis` for development and `REDIS_URL` is set correctly.
+Frontend runs at http://localhost:5173 (or the port in `frontend/vite.config.ts`). It proxies `/api` and `/cable` to the Rails server on port 3000.
+
+**Troubleshooting (local):** MySQL "Access denied" → secure root with `mysql_native_password` as above. Redis "Could not connect" → `sudo service redis-server start` and `redis-cli ping`. Sidekiq/ActionCable → ensure `REDIS_URL` in `backend/.env` matches the running Redis.

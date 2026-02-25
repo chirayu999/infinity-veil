@@ -12,11 +12,11 @@ export default defineConfig(({ mode }) => ({
     },
     proxy: {
       "/api": {
-        target: "http://localhost:3000",
+        target: process.env.VITE_PROXY_TARGET || "http://localhost:3000",
         changeOrigin: true,
       },
       "/cable": {
-        target: "ws://localhost:3000",
+        target: (process.env.VITE_PROXY_TARGET || "http://localhost:3000").replace(/^http/, "ws"),
         ws: true,
       },
     },

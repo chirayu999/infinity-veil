@@ -122,14 +122,19 @@ export default function WebSocketProvider({ children, queryClient }: WebSocketPr
             });
           }
 
+          // Handle chat events first so new_message doesn't trigger query_key invalidation
+          // and wipe the optimistic thinking placeholder during streaming.
+          if (payload.topic === "chat") {
+            handleChatEvent(payload, queryClient);
+            return;
+          }
+
           if (payload.query_key && payload.query_key.length > 0) {
             queryClient.invalidateQueries({ queryKey: payload.query_key });
             return;
           }
 
-          if (payload.topic === "chat") {
-            handleChatEvent(payload, queryClient);
-          } else if (payload.topic === "dashboard") {
+          if (payload.topic === "dashboard") {
             queryClient.invalidateQueries({ queryKey: ["dashboard"] });
           } else if (payload.topic === "threats") {
             queryClient.invalidateQueries({ queryKey: ["threats"] });

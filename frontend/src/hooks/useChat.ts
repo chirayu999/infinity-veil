@@ -3,10 +3,23 @@ import api from '@/lib/api';
 import type { ChatHistoryResponse, ChatMessage } from '@/types';
 
 // GET /api/v1/chat/history
+// When refetch runs (e.g. on mount after navigating back), we merge any in-cache
+// thinking placeholder into the server response so the "COMMANDER is thinking…"
+// bubble is not lost when the user switches pages and returns.
 export function useChatHistory() {
+  const queryClient = useQueryClient();
+
   return useQuery<ChatHistoryResponse>({
     queryKey: ['chat', 'history'],
-    queryFn: () => api.get<ChatHistoryResponse>('/chat/history'),
+    queryFn: async () => {
+      const response = await api.get<ChatHistoryResponse>('/chat/history');
+      const cached = queryClient.getQueryData<ChatHistoryResponse>(['chat', 'history']);
+      const thinkingMsg = cached?.messages?.find((m) => m.isThinking);
+      if (thinkingMsg) {
+        return { messages: [...response.messages, thinkingMsg] };
+      }
+      return response;
+    },
   });
 }
 
