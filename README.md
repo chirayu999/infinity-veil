@@ -4,6 +4,22 @@
 
 AI-powered threat hunting with four Elasticsearch Agent Builder agents that hunt for threats, debate their findings, and take automated response actions.
 
+### Screenshots
+
+![Dashboard](docs/screenshots/5-dashboard.png)
+
+![Active Intrusion Chain - Agent Reasoning](docs/screenshots/4-intrusion-chain.png)
+
+![Threat Detail - Affected Assets & ES|QL Queries](docs/screenshots/2-threat-detail.png)
+
+![Chat with COMMANDER](docs/screenshots/3-chat.png)
+
+![Hunt History](docs/screenshots/6-hunt-history.png)
+
+![Exception Patterns](docs/screenshots/1-exceptions.png)
+
+![Review Queue](docs/screenshots/7-review-queue.png)
+
 ---
 
 ## Features
