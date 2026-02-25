@@ -6,15 +6,9 @@ AI-powered threat hunting with four Elasticsearch Agent Builder agents that hunt
 
 ### Screenshots
 
-<div style="overflow-x: auto; white-space: nowrap;">
-  <img src="docs/screenshots/5-dashboard.png" alt="Dashboard" style="height: 320px; display: inline-block; margin-right: 8px;"/>
-  <img src="docs/screenshots/4-intrusion-chain.png" alt="Active Intrusion Chain" style="height: 320px; display: inline-block; margin-right: 8px;"/>
-  <img src="docs/screenshots/2-threat-detail.png" alt="Threat Detail" style="height: 320px; display: inline-block; margin-right: 8px;"/>
-  <img src="docs/screenshots/3-chat.png" alt="Chat with COMMANDER" style="height: 320px; display: inline-block; margin-right: 8px;"/>
-  <img src="docs/screenshots/6-hunt-history.png" alt="Hunt History" style="height: 320px; display: inline-block; margin-right: 8px;"/>
-  <img src="docs/screenshots/1-exceptions.png" alt="Exception Patterns" style="height: 320px; display: inline-block; margin-right: 8px;"/>
-  <img src="docs/screenshots/7-review-queue.png" alt="Review Queue" style="height: 320px; display: inline-block;"/>
-</div>
+![Screenshots](docs/screenshots/nightwatch-screenshots.gif)
+
+*Dashboard, Intrusion Chain, Threat Detail, Chat, Hunt History, Exception Patterns, Review Queue*
 
 ---
 
